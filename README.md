@@ -11,7 +11,6 @@ Stop solving the same problems twice.
 [![Coverage](https://codecov.io/gh/marerem/longmem/branch/main/graph/badge.svg)](https://codecov.io/gh/marerem/longmem)
 [![Open Issues](https://img.shields.io/github/issues/marerem/longmem)](https://github.com/marerem/longmem/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/marerem/longmem?color=green)](https://github.com/marerem/longmem/issues?q=is%3Aissue+is%3Aclosed)
-[![Stars](https://img.shields.io/github/stars/marerem/longmem?style=social)](https://github.com/marerem/longmem/stargazers)
 
 </div>
 
