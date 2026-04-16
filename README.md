@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="longmem_github_logo.svg" alt="longmem" width="480"/>
+<img src="https://raw.githubusercontent.com/marerem/longmem/main/longmem_github_logo.svg" alt="longmem" width="480"/>
 
 **Cross-project memory for AI coding assistants.**  
 Stop solving the same problems twice.
