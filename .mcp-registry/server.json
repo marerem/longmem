@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.marerem/longmem",
+  "description": "Persistent cross-project memory for Cursor and Claude Code using local semantic search.",
+  "repository": {
+    "url": "https://github.com/marerem/longmem",
+    "source": "github"
+  },
+  "version_detail": {
+    "version": "0.2.0"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "name": "longmem",
+      "identifier": "longmem",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "installInstructions": "pipx install longmem && longmem init"
+    }
+  ]
+}

@@ -276,3 +276,5 @@ uv run pytest
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+<!-- mcp-name: io.github.marerem/longmem -->
