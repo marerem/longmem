@@ -459,6 +459,171 @@ async def test_embed_wraps_unexpected_exception() -> None:
         await server._embed(embedder, "text")
 
 
+# ── search_by_project ─────────────────────────────────────────────────────────
+
+async def test_search_by_project_found() -> None:
+    result = _fake_result(problem="Streamlit 50 countries limit")
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.search_by_project = AsyncMock(return_value=[result])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.search_by_project(project="streamlit-dashboard")
+
+    data = json.loads(raw)
+    assert data["found"] is True
+    assert data["count"] == 1
+    assert data["project"] == "streamlit-dashboard"
+    assert data["entries"][0]["problem"] == result.problem
+
+
+async def test_search_by_project_not_found() -> None:
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.search_by_project = AsyncMock(return_value=[])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.search_by_project(project="unknown-project")
+
+    data = json.loads(raw)
+    assert data["found"] is False
+    assert "unknown-project" in data["message"]
+
+
+async def test_search_by_project_with_query() -> None:
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.search_by_project = AsyncMock(return_value=[])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.search_by_project(project="my-app", query="redis")
+
+    data = json.loads(raw)
+    assert data["found"] is False
+    assert "redis" in data["message"]
+    mock_store.search_by_project.assert_awaited_once_with("my-app", query="redis", limit=20)
+
+
+# ── list_recent ────────────────────────────────────────────────────────────────
+
+async def test_list_recent_tool_returns_entries() -> None:
+    result = _fake_result()
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.list_recent = AsyncMock(return_value=[result])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.list_recent(limit=5)
+
+    data = json.loads(raw)
+    assert data["found"] is True
+    assert data["count"] == 1
+    assert data["entries"][0]["problem"] == result.problem
+
+
+async def test_list_recent_tool_empty() -> None:
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.list_recent = AsyncMock(return_value=[])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.list_recent()
+
+    data = json.loads(raw)
+    assert data["found"] is False
+    assert "message" in data
+
+
+# ── stats ──────────────────────────────────────────────────────────────────────
+
+async def test_stats_tool_returns_data() -> None:
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.get_stats = AsyncMock(return_value={
+        "total": 42,
+        "by_category": {"networking": 10, "database": 5},
+        "oldest_entry": "2025-01-01",
+        "newest_entry": "2025-12-31",
+    })
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.stats()
+
+    data = json.loads(raw)
+    assert data["total"] == 42
+    assert data["by_category"]["networking"] == 10
+
+
+async def test_stats_tool_db_error() -> None:
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.get_stats = AsyncMock(side_effect=OSError("disk full"))
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.stats()
+
+    data = json.loads(raw)
+    assert "error" in data
+
+
+# ── enrich_solution ────────────────────────────────────────────────────────────
+
+async def test_enrich_solution_success() -> None:
+    entry_id = str(uuid.uuid4())
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.enrich_solution = AsyncMock()
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.enrich_solution(
+            entry_id=entry_id,
+            context="Team setup: Sinfonia owns port 4180",
+        )
+
+    data = json.loads(raw)
+    assert data["updated"] is True
+    assert data["id"] == entry_id
+    mock_store.enrich_solution.assert_awaited_once_with(
+        entry_id, "Team setup: Sinfonia owns port 4180"
+    )
+
+
+async def test_enrich_solution_not_found() -> None:
+    entry_id = str(uuid.uuid4())
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.enrich_solution = AsyncMock(
+        side_effect=ValueError(f"Entry {entry_id!r} not found")
+    )
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.enrich_solution(entry_id=entry_id, context="extra")
+
+    data = json.loads(raw)
+    assert data["updated"] is False
+    assert "error" in data
+
+
+async def test_enrich_solution_db_error() -> None:
+    entry_id = str(uuid.uuid4())
+    mock_store, mock_embedder, mock_cfg = _make_deps()
+    mock_store.enrich_solution = AsyncMock(side_effect=OSError("disk full"))
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.enrich_solution(entry_id=entry_id, context="extra")
+
+    data = json.loads(raw)
+    assert "error" in data
+
+
+# ── keyword_match formatting ───────────────────────────────────────────────────
+
+async def test_search_similar_formats_keyword_match() -> None:
+    """Results with keyword_match=True should show 'keyword match' as similarity."""
+    result = _fake_result(similarity=0.0)
+    result.keyword_match = True
+    mock_store, mock_embedder, mock_cfg = _make_deps(search_return=[result])
+
+    with _patch_deps(mock_store, mock_embedder, mock_cfg):
+        raw = await server.search_similar(problem="some problem")
+
+    data = json.loads(raw)
+    assert data["results"][0]["similarity"] == "keyword match"
+    assert data["results"][0]["keyword_match"] is True
+    server._pending_stack.clear()
+
+
 # ── pending_stack deque cap ────────────────────────────────────────────────────
 
 async def test_pending_stack_caps_at_10() -> None:

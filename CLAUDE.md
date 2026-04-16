@@ -106,10 +106,49 @@ The user knows their own facts — no further confirmation required.
 If you are helping work through a problem, wait for an explicit success signal:
 - "works", "it works", "working now"
 - "perfect", "fixed", "solved", "that's it", "that did it"
+- "super" as a standalone confirmation
 - "thanks" at the end of a resolution thread
 
 When a success signal arrives, call `confirm_solution` with a synthesized solution.
 Do not save mid-debug when the outcome is still uncertain.
+
+### Three-layer solution format
+
+| Layer | Scope | How to save |
+|---|---|---|
+| 1. General pattern | Any team, any company | always include in solution text |
+| 2. Team-wide fact | Your whole stack | `project="shared"` |
+| 3. Project detail | One repo only | `project="<repo>"` + `enrich_solution` |
+
+**Example — "why port 4181 not 4180 in nginx proxy_pass?"**
+
+Layer 1 (general, always write this):
+> 4180 is the oauth2-proxy default. 4181 means the proxy was explicitly
+> configured to listen on 4181 — usually because 4180 was already taken
+> or to keep services predictably separated.
+
+Layer 2 (team-wide, save once as `project="shared"`):
+> This team's stack: Sinfonia's oauth2-proxy always owns port 4180.
+> All other projects use 4181+ by convention, not by accident.
+
+Layer 3 (project detail, save per repo or via `enrich_solution`):
+> evaluation_frontend: OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4181,
+> ports: ${OAUTH2_PROXY_PORT:-4181}:4181
+
+A `search_similar` from **any** project returns layers 1+2 immediately.
+Layer 3 appears when searching within that specific project.
+
+### Team-wide facts (project="shared")
+For constants true across the whole stack (port allocations, hostnames, service ownership), save under `project="shared"` so they surface from any project via `search_similar`:
+```
+save_solution(
+  problem="why port 4181 not default 4180 for oauth2-proxy",
+  solution="<layer 1 text>\n\nThis team's setup: <layer 2 text>",
+  project="shared",
+  category="networking",
+  tags=["oauth2-proxy", "ports", "nginx"]
+)
+```
 
 ### General rules
 - Always search first — even for problems you think you know.

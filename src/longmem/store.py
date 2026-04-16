@@ -332,7 +332,15 @@ class SolutionStore:
         try:
             table = await db.create_table(TABLE_NAME, schema=schema)
         except Exception:
-            table = await db.open_table(TABLE_NAME)
+            try:
+                table = await db.open_table(TABLE_NAME)
+            except Exception as exc:
+                location = config.db_uri if config.is_remote else str(config.db_path)
+                raise RuntimeError(
+                    f"Could not open or create the longmem database at {location!r}. "
+                    "Check disk space and permissions. "
+                    f"Original error: {exc}"
+                ) from exc
 
         # FTS index — local storage only (SQLite can't live on S3/cloud)
         fts: FTSStore | None = None

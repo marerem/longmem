@@ -22,23 +22,36 @@ class OllamaEmbedder(Embedder):
         self.model = config.ollama_model
 
     async def embed(self, text: str) -> list[float]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            r = await client.post(
-                f"{self.url}/api/embeddings",
-                json={"model": self.model, "prompt": text},
-            )
-            r.raise_for_status()
-            body = r.json()
-            if "error" in body:
-                raise RuntimeError(
-                    f"Ollama error: {body['error']}. "
-                    f"Make sure the model is loaded: ollama pull {self.model}"
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+            ) as client:
+                r = await client.post(
+                    f"{self.url}/api/embeddings",
+                    json={"model": self.model, "prompt": text},
                 )
-            if "embedding" not in body:
-                raise RuntimeError(
-                    f"Unexpected Ollama response (no 'embedding' key): {body}"
-                )
-            return body["embedding"]
+                r.raise_for_status()
+                body = r.json()
+                if "error" in body:
+                    raise RuntimeError(
+                        f"Ollama error: {body['error']}. "
+                        f"Make sure the model is loaded: ollama pull {self.model}"
+                    )
+                if "embedding" not in body:
+                    raise RuntimeError(
+                        f"Unexpected Ollama response (no 'embedding' key): {body}"
+                    )
+                return body["embedding"]
+        except httpx.ConnectError:
+            raise RuntimeError(
+                f"Cannot connect to Ollama at {self.url}. "
+                "Is Ollama running? Start it with: ollama serve"
+            ) from None
+        except httpx.TimeoutException:
+            raise RuntimeError(
+                f"Ollama at {self.url} timed out. "
+                "It may be loading the model — try again in a few seconds."
+            ) from None
 
 
 class OpenAIEmbedder(Embedder):
@@ -57,7 +70,7 @@ class OpenAIEmbedder(Embedder):
             raise RuntimeError(
                 "OpenAI embedder selected but no API key found. "
                 "Set OPENAI_API_KEY environment variable or add "
-                "openai_api_key = '...' to ~/.longmem-cursor/config.toml"
+                "openai_api_key = '...' to ~/.longmem/config.toml"
             )
         self._client = AsyncOpenAI(api_key=config.openai_api_key)
         self.model = config.openai_model

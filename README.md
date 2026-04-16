@@ -17,6 +17,8 @@ Stop solving the same problems twice.
 
 ---
 
+<!-- demo: record a terminal session showing search_similar finding a cached result, then confirm_solution saving it. Drop the GIF here. -->
+
 Your AI solves the same bug in a different project six months later. Writes the same boilerplate. Explains the same pattern. You already knew the answer.
 
 **longmem** gives your AI a persistent memory that works across every project and every session. Before reasoning from scratch, it searches what you've already solved. After something works, it saves it. The longer you use it, the less you repeat yourself.
@@ -93,6 +95,24 @@ The rules file (`longmem.mdc` for Cursor, `CLAUDE.md` for Claude Code) wires thi
 
 **AI forgot to save?** Run `longmem review` — an interactive CLI to save any solution in 30 seconds.
 
+### Cold start — getting value from day one
+
+longmem is most useful once it has entries. The fastest way to seed it:
+
+**Option 1 — review as you go.** After every solved problem this week, run `longmem review` and describe what you fixed. Ten entries is enough to feel the difference.
+
+**Option 2 — team import.** If a teammate already has entries, they export and you import:
+
+```bash
+# teammate
+longmem export team_knowledge.json
+
+# you
+longmem import team_knowledge.json
+```
+
+**Option 3 — shared DB.** Set `db_path` (or `db_uri` for S3/cloud) to the same location for the whole team. Every save is instantly available to everyone.
+
 ---
 
 ## CLI
@@ -145,6 +165,30 @@ lancedb_api_key = "ldb_..."   # or set LANCEDB_API_KEY
 ```
 
 No shared mount? Use `longmem export` / `longmem import` to distribute a snapshot.
+
+### Team knowledge base
+
+Save facts that are true across your whole stack under `project="shared"` so they surface from any repo:
+
+```
+save_solution(
+  problem="why oauth2-proxy uses port 4181 not default 4180",
+  solution="General: 4180 is the oauth2-proxy default. 4181 means something else already occupies 4180.\n\nThis team's setup: Sinfonia always runs on 4180. Every other project uses 4181+ by convention.",
+  project="shared",
+  category="networking",
+  tags=["oauth2-proxy", "ports", "nginx"]
+)
+```
+
+`search_similar` searches all projects — a `shared` entry surfaces automatically from any repo without needing `search_by_project`.
+
+**Three-layer solution format** — write solutions so they work for anyone who finds them:
+
+| Layer | Scope | How to save |
+|---|---|---|
+| 1. General pattern | Universal — any team | always include in solution text |
+| 2. Team-wide fact | Your whole stack | `project="shared"` |
+| 3. Project detail | One repo only | `project="<repo>"` + `enrich_solution` |
 
 ### Tuning
 
@@ -202,14 +246,30 @@ Categories pre-filter before vector search — keeps retrieval fast at any scale
 
 ## Contributing
 
+Contributions are very welcome — this project grows with the community that uses it.
+
+Whether it's a bug fix, a new feature, better docs, or just sharing your use case — all of it helps. If you're unsure whether an idea fits, open an issue first and we'll figure it out together.
+
+**Getting started:**
+
 ```bash
-git clone https://github.com/mariia-eremina/longmem
+git clone https://github.com/marerem/longmem
 cd longmem
 uv sync --group dev
 uv run pytest
 ```
 
-Pull requests welcome — bug fixes, features, docs, tests.
+**Good first contributions:**
+- New category suggestions
+- Edge cases you hit in real projects
+- IDE integrations (JetBrains, VS Code, Neovim, etc.)
+- Better error messages
+- Seed datasets — export your own entries and share them as a starter pack
+
+**Ways to contribute without code:**
+- Star the repo if you find it useful
+- Share it with your team
+- Open an issue if something is confusing — unclear UX is a bug
 
 ---
 

@@ -174,3 +174,83 @@ def test_get_embedder_openai_raises_on_missing_key():
     with patch("openai.AsyncOpenAI"):
         with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
             get_embedder(cfg)
+
+
+# ── fix: ConnectError and TimeoutException give helpful messages ──────────────
+
+async def test_ollama_connect_error_raises_helpful_message():
+    """ConnectError should tell the user to start Ollama, not dump a stack trace."""
+    import httpx
+
+    cfg = Config(ollama_url="http://localhost:11434", ollama_model="nomic-embed-text")
+    embedder = OllamaEmbedder(cfg)
+
+    with patch("httpx.AsyncClient") as mock_cls:
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
+        mock_cls.return_value = mock_client
+
+        with pytest.raises(RuntimeError, match="ollama serve"):
+            await embedder.embed("test text")
+
+
+async def test_ollama_timeout_raises_helpful_message():
+    """TimeoutException should suggest retrying, not show a raw timeout error."""
+    import httpx
+
+    cfg = Config(ollama_url="http://localhost:11434", ollama_model="nomic-embed-text")
+    embedder = OllamaEmbedder(cfg)
+
+    with patch("httpx.AsyncClient") as mock_cls:
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.post = AsyncMock(side_effect=httpx.ReadTimeout("timed out"))
+        mock_cls.return_value = mock_client
+
+        with pytest.raises(RuntimeError, match="timed out"):
+            await embedder.embed("test text")
+
+
+# ── fix: db:// URI requires API key ──────────────────────────────────────────
+
+def test_load_config_db_uri_without_api_key_raises(tmp_path, monkeypatch):
+    """LanceDB Cloud URI without API key should fail at load_config, not first tool call."""
+    config_file = tmp_path / "config.toml"
+    config_file.write_text('db_uri = "db://my-org/my-db"\n')
+
+    monkeypatch.setattr("longmem.config.CONFIG_FILE", config_file)
+    monkeypatch.setattr("longmem.config.DB_PATH", tmp_path / "db")
+    monkeypatch.delenv("LANCEDB_API_KEY", raising=False)
+
+    with pytest.raises(ValueError, match="lancedb_api_key"):
+        load_config()
+
+
+def test_load_config_db_uri_with_env_key_succeeds(tmp_path, monkeypatch):
+    """db:// URI with LANCEDB_API_KEY env var should load without error."""
+    config_file = tmp_path / "config.toml"
+    config_file.write_text('db_uri = "db://my-org/my-db"\n')
+
+    monkeypatch.setattr("longmem.config.CONFIG_FILE", config_file)
+    monkeypatch.setattr("longmem.config.DB_PATH", tmp_path / "db")
+    monkeypatch.setenv("LANCEDB_API_KEY", "ldb_test_key")
+
+    cfg = load_config()
+    assert cfg.lancedb_api_key == "ldb_test_key"
+    assert cfg.is_remote is True
+
+
+def test_load_config_s3_uri_does_not_require_api_key(tmp_path, monkeypatch):
+    """S3/GCS/Azure URIs should not require lancedb_api_key."""
+    config_file = tmp_path / "config.toml"
+    config_file.write_text('db_uri = "s3://my-bucket/longmem"\n')
+
+    monkeypatch.setattr("longmem.config.CONFIG_FILE", config_file)
+    monkeypatch.setattr("longmem.config.DB_PATH", tmp_path / "db")
+    monkeypatch.delenv("LANCEDB_API_KEY", raising=False)
+
+    cfg = load_config()  # should not raise
+    assert cfg.is_remote is True

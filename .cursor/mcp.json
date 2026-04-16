@@ -3,7 +3,20 @@
     "longmem-cursor": {
       "command": "longmem-cursor",
       "args": [],
-      "env": {}
+      "env": {},
+      "alwaysAllow": [
+        "search_similar",
+        "confirm_solution",
+        "save_solution",
+        "enrich_solution",
+        "correct_solution",
+        "add_edge_case",
+        "search_by_project",
+        "list_recent",
+        "stats",
+        "delete_solution",
+        "rebuild_index"
+      ]
     }
   }
 }

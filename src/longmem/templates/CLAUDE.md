@@ -11,13 +11,49 @@ search_similar(problem="<what is broken or needed>", category="<domain>", tags=[
 → similarity < 85%: solve normally, then apply Rule 2
 
 ## Rule 2 — save on success
-When user signals success ("works", "fixed", "perfect", "thanks" at end of thread), call:
+When user signals success ("works", "fixed", "perfect", "super", "thanks" at end of thread), call:
 ```
 confirm_solution(solution="<reusable synthesis>", project="<repo name>")
 ```
 Metadata is auto-filled from the last `search_similar`. If search was skipped, use `save_solution` with all params.
 
-Write solutions as general patterns first, then specific detail — so they're reusable across projects.
+Write solutions in three layers:
+
+| Layer | Scope | How to save |
+|---|---|---|
+| 1. General pattern | Any team, any company | always include in solution text |
+| 2. Team-wide fact | Your whole stack | `project="shared"` |
+| 3. Project detail | One repo only | `project="<repo>"` + `enrich_solution` |
+
+**Example — "why port 4181 not 4180 in nginx proxy_pass?"**
+
+Layer 1 (general, always write this):
+> 4180 is the oauth2-proxy default. 4181 means the proxy was explicitly
+> configured to listen on 4181 — usually because 4180 was already taken
+> or to keep services predictably separated.
+
+Layer 2 (team-wide, save once as `project="shared"`):
+> This team's stack: Sinfonia's oauth2-proxy always owns port 4180.
+> All other projects use 4181+ by convention, not by accident.
+
+Layer 3 (project detail, save per repo or `enrich_solution`):
+> evaluation_frontend: OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4181,
+> ports: ${OAUTH2_PROXY_PORT:-4181}:4181
+
+A `search_similar` from **any** project returns layers 1+2 immediately.
+Layer 3 appears when searching within that specific project.
+
+## Team-wide facts (project="shared")
+For constants true across your whole stack (port allocations, hostnames, service ownership), save under `project="shared"` so they surface from any repo:
+```
+save_solution(
+  problem="why port 4181 not default 4180 for oauth2-proxy",
+  solution="<layer 1 text>\n\nThis team's setup: <layer 2 text>",
+  project="shared",
+  category="networking",
+  tags=["oauth2-proxy", "ports", "nginx"]
+)
+```
 
 ## Other tools (when needed)
 - `correct_solution` — user corrects a saved fact → call immediately, no confirmation needed

@@ -82,6 +82,15 @@ def load_config() -> Config:
     cfg.openai_api_key = os.environ.get("OPENAI_API_KEY", cfg.openai_api_key)
     cfg.lancedb_api_key = os.environ.get("LANCEDB_API_KEY", cfg.lancedb_api_key)
 
+    # LanceDB Cloud (db://) requires an API key — fail early with a clear message
+    if cfg.db_uri.startswith("db://") and not cfg.lancedb_api_key:
+        raise ValueError(
+            f"db_uri is set to a LanceDB Cloud URI ({cfg.db_uri!r}) "
+            "but no lancedb_api_key was found. "
+            "Set the LANCEDB_API_KEY environment variable or add "
+            "lancedb_api_key = 'ldb_...' to ~/.longmem/config.toml"
+        )
+
     # Only create the local directory when using local storage
     if not cfg.is_remote:
         cfg.db_path.mkdir(parents=True, exist_ok=True)

@@ -283,7 +283,11 @@ def _check_ollama_status(cfg) -> None:
         r.raise_for_status()
         models = [m.get("name", "") for m in r.json().get("models", [])]
         has_model = any(cfg.ollama_model in m for m in models)
-        _ok(f"Ollama running — {'model found' if has_model else 'WARNING: ' + cfg.ollama_model + ' not installed'}")
+        if has_model:
+            _ok(f"Ollama running — model {cfg.ollama_model!r} found")
+        else:
+            _warn(f"Ollama running but {cfg.ollama_model!r} not installed")
+            _info(f"Run: ollama pull {cfg.ollama_model}")
     except Exception:
         _warn(f"Ollama not reachable at {cfg.ollama_url}")
 

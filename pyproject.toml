@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "longmem"
-version = "0.1.2"
+version = "0.2.0"
 description = "Persistent cross-project memory for Cursor and Claude Code — stores problem/solution pairs with semantic search"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 keywords = ["cursor", "claude-code", "mcp", "memory", "llm", "rag", "embeddings", "lancedb", "ollama"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
