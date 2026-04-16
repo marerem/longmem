@@ -8,6 +8,10 @@ Stop solving the same problems twice.
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://github.com/marerem/longmem/actions/workflows/test.yml/badge.svg)](https://github.com/marerem/longmem/actions)
+[![Coverage](https://codecov.io/gh/marerem/longmem/branch/main/graph/badge.svg)](https://codecov.io/gh/marerem/longmem)
+[![Open Issues](https://img.shields.io/github/issues/marerem/longmem)](https://github.com/marerem/longmem/issues)
+[![Closed Issues](https://img.shields.io/github/issues-closed/marerem/longmem?color=green)](https://github.com/marerem/longmem/issues?q=is%3Aissue+is%3Aclosed)
+[![Stars](https://img.shields.io/github/stars/marerem/longmem?style=social)](https://github.com/marerem/longmem/stargazers)
 
 </div>
 
