@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented here.
 
+## [0.1.2] — 2026-04-16
+
+### Fixed
+- `longmem --help` now shows usage instead of starting the MCP server
+
 ## [0.1.1] — 2026-04-16
 
 ### Fixed

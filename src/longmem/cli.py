@@ -505,6 +505,23 @@ def main() -> None:
         print(_get_version())
         return
 
+    if first in ("--help", "-h"):
+        print(f"longmem {_get_version()}")
+        print()
+        print("Usage:")
+        print("  longmem              Start MCP server (used by Cursor / Claude Code)")
+        print("  longmem init         One-time machine setup wizard")
+        print("  longmem install      Copy rules into current project")
+        print("  longmem status       Show config, Ollama status, and DB stats")
+        print("  longmem export       Export all entries to a JSON file")
+        print("  longmem import FILE  Import entries from a JSON export")
+        print("  longmem review       Manually save a solution when the AI forgot")
+        print()
+        print("Options:")
+        print("  --version            Show version and exit")
+        print("  --help               Show this message and exit")
+        return
+
     if first not in _SUBCOMMANDS:
         # MCP server mode — start over stdio
         from .server import main as server_main
