@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [0.1.1] — 2026-04-16
+
+### Fixed
+- Logo image now renders correctly on PyPI (absolute URL)
+- CI badge pointed to wrong GitHub username
+- OpenAI tests now skip gracefully when optional extra is not installed
+
 ## [0.1.0] — 2026-04-16
 
 Initial release.
