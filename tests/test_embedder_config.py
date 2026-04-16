@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import importlib.util
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from longmem.config import Config, load_config
 from longmem.embedder import OllamaEmbedder, OpenAIEmbedder, get_embedder
+
+_openai_available = importlib.util.find_spec("openai") is not None
+skip_without_openai = pytest.mark.skipif(
+    not _openai_available, reason="openai extra not installed"
+)
 
 
 # ── fix 1: config crash on invalid similarity_threshold ───────────────────────
@@ -102,6 +108,7 @@ async def test_ollama_valid_response_returns_vector():
 
 # ── fix 3: OpenAI IndexError on empty data ────────────────────────────────────
 
+@skip_without_openai
 async def test_openai_empty_data_raises_runtime_error():
     """OpenAI returning empty data list should raise RuntimeError, not IndexError."""
     cfg = Config(openai_api_key="sk-test", embedder="openai")
@@ -117,6 +124,7 @@ async def test_openai_empty_data_raises_runtime_error():
         await embedder.embed("test")
 
 
+@skip_without_openai
 async def test_openai_valid_response_returns_vector():
     """OpenAI returning a valid response should return the embedding."""
     cfg = Config(openai_api_key="sk-test", embedder="openai")
@@ -137,6 +145,7 @@ async def test_openai_valid_response_returns_vector():
 
 # ── fix 4: OpenAI missing API key fails at startup, not first call ─────────────
 
+@skip_without_openai
 def test_openai_embedder_raises_on_missing_key():
     """OpenAIEmbedder should raise RuntimeError at __init__ if API key is empty."""
     cfg = Config(openai_api_key="", embedder="openai")
@@ -146,6 +155,7 @@ def test_openai_embedder_raises_on_missing_key():
             OpenAIEmbedder(cfg)
 
 
+@skip_without_openai
 def test_openai_embedder_accepts_valid_key():
     """OpenAIEmbedder should initialise without error when key is present."""
     cfg = Config(openai_api_key="sk-validkey", embedder="openai")
@@ -156,6 +166,7 @@ def test_openai_embedder_accepts_valid_key():
     assert embedder.model == cfg.openai_model
 
 
+@skip_without_openai
 def test_get_embedder_openai_raises_on_missing_key():
     """get_embedder should propagate the RuntimeError from OpenAIEmbedder.__init__."""
     cfg = Config(openai_api_key="", embedder="openai")
