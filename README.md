@@ -12,6 +12,7 @@ Stop solving the same problems twice.
 [![Coverage](https://codecov.io/gh/marerem/longmem/branch/main/graph/badge.svg)](https://codecov.io/gh/marerem/longmem)
 [![Open Issues](https://img.shields.io/github/issues/marerem/longmem)](https://github.com/marerem/longmem/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/marerem/longmem?color=green)](https://github.com/marerem/longmem/issues?q=is%3Aissue+is%3Aclosed)
+[![marerem/longmem MCP server](https://glama.ai/mcp/servers/marerem/longmem/badges/score.svg)](https://glama.ai/mcp/servers/marerem/longmem)
 
 </div>
 
@@ -27,17 +28,25 @@ Your AI solves the same bug in a different project six months later. Writes the 
 You describe a problem
         │
         ▼
-  search_similar()   ──── match found (≥85%) ────▶  cached solution + edge cases
-        │
-    no match
-        │
-        ▼
-  AI reasons from scratch
-        │
-   "it works"
-        │
-        ▼
-  confirm_solution()  ──── saved for every future project
+  search_similar()
+  ┌─────────────────────────────────────────────────────┐
+  │  1. pre-filter by category (ci_cd / auth / db / …)  │
+  │  2. semantic search  (Ollama or OpenAI embeddings)   │
+  │  3. keyword search   (SQLite FTS5 exact match)       │
+  │  4. merge + rank results                             │
+  └─────────────────────────────────────────────────────┘
+        │                          │
+   score ≥ 85%               score < 85%
+        │                          │
+        ▼                          ▼
+  cached solution           AI reasons from scratch
+  + edge cases                      │
+  + team knowledge               "it works"
+  (any project)                     │
+                                    ▼
+                          confirm_solution()
+                          saved once — surfaces
+                          from every future project
 ```
 
 ---
